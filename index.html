@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guest QR Code Scanner</title>
+    <title>Guest QR Code Scannerr</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
@@ -66,12 +66,46 @@
             text-align: center;
             max-width: 400px;
         }
+        .guest-info-card {
+            background-color: #f0fdf4;
+            border: 2px solid #22c55e;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .guest-info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .guest-info-label {
+            font-size: 0.875rem;
+            color: #4b5563;
+            font-weight: 500;
+        }
+        .guest-info-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .guest-name {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body>
 <div class="card" id="app-container">
     <h1 class="text-3xl font-bold mb-2">Guest QR Scanner</h1>
-    <p class="text-gray-500 mb-6">Scan guest codes to check them in and view their details.</p>
+    <p class="text-gray-500 mb-6">Scan guest codes to see their details.</p>
     <div id="reader" class="w-full h-[300px] border-4 border-gray-200 rounded-lg overflow-hidden mb-6"></div>
     <button id="scanner-start-btn" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
         Start Scanning
@@ -93,7 +127,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     // IMPORTANT: Hardcoded Firebase configuration
     const firebaseConfig = {
@@ -189,7 +223,6 @@
     }
     async function handleScannedCode(qrData) {
         try {
-            // Parse the JSON string from the QR code to get the guest ID
             const parsedData = JSON.parse(qrData);
             const guestId = parsedData.id;
             if (!guestId) {
@@ -201,22 +234,21 @@
             if (guestDoc.exists()) {
                 const guestData = guestDoc.data();
                 scannedTextDiv.innerHTML = `
-                    <div class="p-4 bg-green-100 text-green-800 rounded-lg shadow-md mt-4">
-                        <h3 class="font-bold text-lg">Guest Found!</h3>
-                        <p><strong>Guest Name:</strong> ${guestData.guest_id || 'N/A'}</p>
-                        <p><strong>Group Size:</strong> ${guestData.group_size || 'N/A'}</p>
-                        <p><strong>Table Number:</strong> ${guestData.table_number || 'N/A'}</p>
-                        <p class="font-semibold mt-2">Status: ${guestData.is_checked_in ? 'Already Checked In' : 'Not Checked In'}</p>
+                    <div class="guest-info-card">
+                        <h3 class="guest-name">${guestData.guest_id || 'N/A'}</h3>
+                        <div class="flex justify-around w-full">
+                            <div class="guest-info-item">
+                                <span class="guest-info-label">Table Number</span>
+                                <span class="guest-info-value">${guestData.table_number || 'N/A'}</span>
+                            </div>
+                            <div class="guest-info-item">
+                                <span class="guest-info-label">Group Size</span>
+                                <span class="guest-info-value">${guestData.group_size || 'N/A'}</span>
+                            </div>
+                        </div>
                     </div>
                 `;
-                if (!guestData.is_checked_in) {
-                    await updateDoc(guestDocRef, {
-                        is_checked_in: true
-                    });
-                    showStatusMessage('Guest checked in successfully!', 'success');
-                } else {
-                    showStatusMessage('Guest already checked in.', 'error');
-                }
+                showStatusMessage('Guest found. Ready to scan next code.', 'success');
             } else {
                 showStatusMessage('Error: QR code does not match any guest in the database.', 'error');
             }
@@ -227,18 +259,21 @@
     }
     // --- UI State Management and Helpers ---
     function showStatusMessage(message, type) {
-        let bgColor, textColor;
+        let bgColor, textColor, borderColor;
         if (type === 'success') {
             bgColor = 'bg-green-100';
             textColor = 'text-green-700';
+            borderColor = 'border-green-400';
         } else if (type === 'error') {
             bgColor = 'bg-red-100';
             textColor = 'text-red-700';
+            borderColor = 'border-red-400';
         } else {
             bgColor = 'bg-gray-100';
             textColor = 'text-gray-500';
+            borderColor = 'border-gray-300';
         }
-        scannedTextDiv.innerHTML = `<div class="p-4 rounded-lg text-center font-medium transition-all duration-300 transform ${bgColor} ${textColor}">${message}</div>`;
+        scannedTextDiv.innerHTML = `<div class="p-4 rounded-lg text-center font-medium transition-all duration-300 transform ${bgColor} ${textColor} border-2 ${borderColor}">${message}</div>`;
     }
     // --- Initial Call ---
     window.onload = initializeAppAndFirebase;
