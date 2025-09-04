@@ -17,7 +17,6 @@
             min-height: 100vh;
             padding: 1rem;
         }
-
         .card {
             background-color: #fff;
             border-radius: 1.5rem;
@@ -28,7 +27,6 @@
             max-width: 600px;
             border: 1px solid #e2e8f0;
         }
-
         .output-message {
             margin-top: 1rem;
             font-size: 1.25rem;
@@ -36,22 +34,18 @@
             padding: 0.75rem;
             border-radius: 0.5rem;
         }
-
         .success {
             background-color: #d1fae5;
             color: #065f46;
         }
-
         .error {
             background-color: #fee2e2;
             color: #991b1b;
         }
-
         .info {
             background-color: #dbeafe;
             color: #1e40af;
         }
-
         .modal {
             display: none; /* Hidden by default */
             position: fixed;
@@ -65,7 +59,6 @@
             justify-content: center;
             align-items: center;
         }
-
         .modal-content {
             background-color: #fefefe;
             padding: 2rem;
@@ -76,24 +69,19 @@
     </style>
 </head>
 <body>
-
 <div class="card" id="app-container">
     <h1 class="text-3xl font-bold mb-2">Guest QR Scanner</h1>
     <p class="text-gray-500 mb-6">Scan guest codes to check them in and view their details.</p>
-
     <div id="reader" class="w-full h-[300px] border-4 border-gray-200 rounded-lg overflow-hidden mb-6"></div>
-
     <button id="scanner-start-btn" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
         Start Scanning
     </button>
-    
     <div id="scanned-text" class="mt-4">
         <div class="p-4 text-center text-gray-500 rounded-lg bg-gray-50 border border-gray-200 shadow-sm">
             Point your camera at a QR code to scan.
         </div>
     </div>
 </div>
-
 <!-- Camera Permission Modal -->
 <div id="cameraModal" class="modal">
     <div class="modal-content">
@@ -102,13 +90,11 @@
         <button id="closeModalBtn" class="py-2 px-4 bg-blue-500 text-white rounded-md">Close</button>
     </div>
 </div>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
     // IMPORTANT: Hardcoded Firebase configuration
     const firebaseConfig = {
         apiKey: "AIzaSyA_feMG7fruy8JP8SavztqMEq0_hhwygVI",
@@ -119,17 +105,13 @@
         appId: "1:1002898401701:web:7461503d7c7bb9f8fb604c",
         measurementId: "G-KQBS4BY8VX"
     };
-
     const appId = firebaseConfig.appId;
-
     setLogLevel('Debug');
-
     let db;
     let auth;
     let userId;
     let html5QrCode;
     let isScanning = false;
-
     // --- UI Element References ---
     const appContainer = document.getElementById('app-container');
     const scannedTextDiv = document.getElementById('scanned-text');
@@ -137,27 +119,21 @@
     const readerDiv = document.getElementById('reader');
     const cameraModal = document.getElementById('cameraModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
-
     closeModalBtn.addEventListener('click', () => {
         cameraModal.style.display = 'none';
     });
-
     // --- App Initialization and Firebase Authentication ---
     async function initializeAppAndFirebase() {
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-
             await signInAnonymously(auth);
-            
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     userId = user.uid;
                     console.log("Firebase initialized successfully. User ID:", userId);
-                    
                     html5QrCode = new Html5Qrcode("reader");
-
                     scannerStartBtn.addEventListener('click', () => {
                         if (isScanning) {
                             html5QrCode.stop().then(() => {
@@ -169,7 +145,6 @@
                             startScanner();
                         }
                     });
-
                     // Start scanner on initial load
                     cameraModal.style.display = 'flex';
                     startScanner();
@@ -183,11 +158,9 @@
             showStatusMessage(`Failed to initialize app. Error: ${error.message}`, 'error');
         }
     }
-
     // --- QR Code Scanner Logic ---
     function startScanner() {
         showStatusMessage('Requesting camera permissions...', 'info');
-        
         html5QrCode.start(
             { facingMode: "environment" },
             {
@@ -214,25 +187,28 @@
             showStatusMessage('Error starting scanner. Please check for camera permissions.', 'error');
         });
     }
-
     async function handleScannedCode(qrData) {
         try {
-            const guestId = qrData;
+            // Parse the JSON string from the QR code to get the guest ID
+            const parsedData = JSON.parse(qrData);
+            const guestId = parsedData.id;
+            if (!guestId) {
+                showStatusMessage('Error: QR code has an invalid format.', 'error');
+                return;
+            }
             const guestDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'guests', guestId);
             const guestDoc = await getDoc(guestDocRef);
-
             if (guestDoc.exists()) {
                 const guestData = guestDoc.data();
-                
                 scannedTextDiv.innerHTML = `
                     <div class="p-4 bg-green-100 text-green-800 rounded-lg shadow-md mt-4">
                         <h3 class="font-bold text-lg">Guest Found!</h3>
+                        <p><strong>Guest Name:</strong> ${guestData.guest_id || 'N/A'}</p>
                         <p><strong>Group Size:</strong> ${guestData.group_size || 'N/A'}</p>
                         <p><strong>Table Number:</strong> ${guestData.table_number || 'N/A'}</p>
                         <p class="font-semibold mt-2">Status: ${guestData.is_checked_in ? 'Already Checked In' : 'Not Checked In'}</p>
                     </div>
                 `;
-                
                 if (!guestData.is_checked_in) {
                     await updateDoc(guestDocRef, {
                         is_checked_in: true
@@ -249,7 +225,6 @@
             showStatusMessage('An error occurred. Invalid QR code format or database error.', 'error');
         }
     }
-
     // --- UI State Management and Helpers ---
     function showStatusMessage(message, type) {
         let bgColor, textColor;
@@ -265,10 +240,8 @@
         }
         scannedTextDiv.innerHTML = `<div class="p-4 rounded-lg text-center font-medium transition-all duration-300 transform ${bgColor} ${textColor}">${message}</div>`;
     }
-
     // --- Initial Call ---
     window.onload = initializeAppAndFirebase;
 </script>
-
 </body>
 </html>
