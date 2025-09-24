@@ -196,7 +196,7 @@
             { facingMode: "environment" },
             {
                 fps: 10,
-                qrbox: { width: 250, height: 250 }
+                qrbox: { width: 500, height: 500 }
             },
             (decodedText) => {
                 handleScannedCode(decodedText);
@@ -248,32 +248,8 @@
                                 <span class="guest-info-value">${guestData.group_size || 'N/A'}</span>
                             </div>
                         </div>
-                         <button id="showQrBtn" class="mt-4 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                             Show QR Code
-                         </button>
-                         <div id="retrieved-qr-container" class="mt-4 hidden">
-                            <img id="retrieved-qr-img" class="border-2 border-gray-300 rounded-lg p-2" alt="Retrieved QR Code" />
-                         </div>
                     </div>
                 `;
-
-                // Add event listener for the new button
-                document.getElementById('showQrBtn').addEventListener('click', () => {
-                    const imgElement = document.getElementById('retrieved-qr-img');
-                    const qrContainer = document.getElementById('retrieved-qr-container');
-                    if (guestData.qr_image_data) {
-                        qrContainer.classList.toggle('hidden');
-                        if (qrContainer.classList.contains('hidden')) {
-                            showQrBtn.textContent = 'Show QR Code';
-                        } else {
-                            showQrBtn.textContent = 'Hide QR Code';
-                            imgElement.src = guestData.qr_image_data; // Set the image source when showing
-                        }
-                    } else {
-                        // Use a simple message box for this type of info
-                        showStatusMessage('No QR code image found for this guest.', 'error');
-                    }
-                });
             } else {
                 showStatusMessage('Error: QR code does not match any guest in the database.', 'error');
             }
